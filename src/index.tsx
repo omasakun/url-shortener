@@ -280,6 +280,8 @@ app.get("/:key", async (c) => {
   if (!data) return c.notFound();
 
   const { url } = JSON.parse(data);
+  c.header("Referrer-Policy", "no-referrer");
+  c.header("Cache-Control", "no-cache, no-store, must-revalidate");
   return c.redirect(url);
 });
 
