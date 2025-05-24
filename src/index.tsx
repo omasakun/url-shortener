@@ -2,11 +2,10 @@ import { zValidator } from "@hono/zod-validator";
 import dedent from "dedent";
 import { Hono } from "hono";
 import { basicAuth } from "hono/basic-auth";
+import { csrf } from "hono/csrf";
 import type { Child, FC } from "hono/jsx";
 import { renderSVG } from "uqr";
 import { z } from "zod";
-
-const app = new Hono<{ Bindings: CloudflareBindings }>();
 
 const generateKey = async (URL_SHORTENER: KVNamespace<string>) => {
   const chars = "abcdefghijklmnopqrstuvwxyz";
@@ -117,6 +116,10 @@ const Layout: FC<{ children: Child }> = ({ children }) => (
   </html>
 );
 
+const app = new Hono<{ Bindings: CloudflareBindings }>();
+
+app.use(csrf());
+
 app.use(
   "/",
   basicAuth({
@@ -141,11 +144,12 @@ app.get(
 
     if (key) {
       const shortenURL = new URL(`/${key}`, c.req.url).toString();
-      const svg = renderSVG(shortenURL, {
+      const qrSvg = renderSVG(shortenURL, {
         border: 3,
         whiteColor: "#f4f4f9",
         blackColor: "#000",
       });
+      const qrDataUri = `data:image/svg+xml;base64,${btoa(qrSvg)}`;
 
       return c.html(
         <Layout>
@@ -153,7 +157,7 @@ app.get(
           <p>
             <a href={shortenURL}>{shortenURL}</a>
           </p>
-          <div class="qr" dangerouslySetInnerHTML={{ __html: svg }} />
+          <img className="qr" src={qrDataUri} alt="QR Code" />
           <p>
             <a class="button" href="/">
               Go back
@@ -216,7 +220,7 @@ app.get(
             name="key"
             placeholder="Custom key (optional)"
             pattern="[a-z0-9]*"
-            />
+          />
           <button type="submit">Shorten</button>
         </form>
         <p>
@@ -233,7 +237,10 @@ app.post(
     "form",
     z.object({
       url: z.string().url(),
-      key: z.string().regex(/^[a-z0-9]+$/).optional(),
+      key: z
+        .string()
+        .regex(/^[a-z0-9]+$/)
+        .optional(),
     }),
   ),
   async (c) => {
@@ -244,7 +251,8 @@ app.post(
         <Layout>
           <h1>URL Shortener</h1>
           <p>
-            The custom key "{customKey}" is already in use. Please choose another key.
+            The custom key "{customKey}" is already in use. Please choose
+            another key.
           </p>
           <p>
             <a class="button" href="/">

@@ -8,7 +8,7 @@
 
 A simple URL shortener made with Cloudflare Workers.
 
-This project includes a simple web interface to shorten URLs, as well as a REST API for programmatic access.
+This project also include a simple web interface to shorten URLs.
 
 ## Setup
 
