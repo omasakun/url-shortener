@@ -14,7 +14,11 @@ This project includes a simple web interface to shorten URLs, as well as a REST 
 
 ```bash
 npm install
+npx wrangler kv namespace create URL_SHORTENER
+npx wrangler secret put PASSWORD
+
 npm run typegen
+
 npm run dev
 
 npm run deploy
