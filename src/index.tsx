@@ -211,6 +211,12 @@ app.get(
             required
             placeholder="https://example.com"
           />
+          <input
+            type="text"
+            name="key"
+            placeholder="Custom key (optional)"
+            pattern="[a-z0-9]*"
+            />
           <button type="submit">Shorten</button>
         </form>
         <p>
@@ -227,12 +233,30 @@ app.post(
     "form",
     z.object({
       url: z.string().url(),
+      key: z.string().regex(/^[a-z0-9]+$/).optional(),
     }),
   ),
   async (c) => {
-    const url = c.req.valid("form").url;
+    const { url, key: customKey } = c.req.valid("form");
 
-    const key = await generateKey(c.env.URL_SHORTENER);
+    if (customKey && (await c.env.URL_SHORTENER.get(customKey))) {
+      return c.html(
+        <Layout>
+          <h1>URL Shortener</h1>
+          <p>
+            The custom key "{customKey}" is already in use. Please choose another key.
+          </p>
+          <p>
+            <a class="button" href="/">
+              Go back
+            </a>
+          </p>
+        </Layout>,
+      );
+    }
+
+    const key = customKey || (await generateKey(c.env.URL_SHORTENER)); // Use custom key if provided
+
     const timestamp = new Date().toISOString();
     const data = JSON.stringify({ url, timestamp });
 
